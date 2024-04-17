@@ -9,5 +9,6 @@
   },
   "devDependencies": {
     "vite": "^5.2.9"
-  }
+  },
+  "version": "0.1.0"
 }
