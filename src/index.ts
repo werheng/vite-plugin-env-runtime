@@ -6,6 +6,7 @@ import MagicString from 'magic-string'
 import dotenv from 'dotenv'
 import consola from 'consola'
 import defu from 'defu'
+import { minimatch } from 'minimatch'
 import type { Options } from './types'
 
 function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
@@ -13,6 +14,7 @@ function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
     name: '__PRODUCTION__APP__CONF__',
     prefix: 'VITE_',
     filename: 'config.js',
+    exclude: [],
   })
 
   const { base, build, envPrefix, envDir } = defu(viteConfig, {
@@ -22,8 +24,10 @@ function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
     envDir: '',
   })
 
+  const ENV_DISABLE_KEY = 'VITE_ENV_RUNTIME'
   const CONFIG_NAME = options.name
   const FILENAME = options.filename
+  const EXCLUDE = Array.isArray(options.exclude) ? options.exclude : [options.exclude]
   const PREFIX = options.prefix ?? (Array.isArray(envPrefix) ? envPrefix[0] : envPrefix)
   const OUTPUT_DIR = build.outDir
   const BASE = base
@@ -79,10 +83,13 @@ function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
       }
     })
 
+    if (envConfig[ENV_DISABLE_KEY] === 'false')
+      return {}
+
     const reg = new RegExp(`^(${match})`)
 
     Object.keys(envConfig).forEach((key) => {
-      if (!reg.test(key))
+      if (!reg.test(key) || EXCLUDE.some(exclude => minimatch(key, exclude)))
         Reflect.deleteProperty(envConfig, key)
     })
 

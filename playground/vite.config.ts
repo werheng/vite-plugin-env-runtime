@@ -4,6 +4,10 @@ import EnvRuntime from '../src'
 export default defineConfig({
   server: { port: 3001 },
   plugins: [
-    EnvRuntime(),
+    EnvRuntime({
+      exclude: [
+        'VITE_EXCLUDES_*',
+      ],
+    }),
   ],
 })

@@ -54,7 +54,8 @@
     "consola": "^3.2.3",
     "defu": "^6.1.4",
     "dotenv": "^16.4.5",
-    "magic-string": "^0.30.9"
+    "magic-string": "^0.30.9",
+    "minimatch": "^9.0.4"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.14.0",

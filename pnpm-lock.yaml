@@ -20,6 +20,9 @@ importers:
       magic-string:
         specifier: ^0.30.9
         version: 0.30.9
+      minimatch:
+        specifier: ^9.0.4
+        version: 9.0.4
     devDependencies:
       '@antfu/eslint-config':
         specifier: ^2.14.0
