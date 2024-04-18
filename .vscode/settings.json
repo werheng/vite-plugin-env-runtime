@@ -38,9 +38,8 @@
     "json",
     "jsonc",
     "yaml",
-    "toml"
-  ],
-  "cSpell.words": [
-    "Fack"
+    "toml",
+    "gql",
+    "graphql"
   ]
 }
