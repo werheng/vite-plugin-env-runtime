@@ -15,10 +15,11 @@ function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
     filename: 'config.js',
   })
 
-  const { envPrefix, build, base } = defu(viteConfig, {
+  const { base, build, envPrefix, envDir } = defu(viteConfig, {
     base: '/',
     build: { outDir: 'dist' },
     envPrefix: 'VITE_',
+    envDir: '',
   })
 
   const CONFIG_NAME = options.name
@@ -26,6 +27,7 @@ function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
   const PREFIX = options.prefix ?? (Array.isArray(envPrefix) ? envPrefix[0] : envPrefix)
   const OUTPUT_DIR = build.outDir
   const BASE = base
+  const ENV_DIR = envDir
 
   function getConfigName() {
     return CONFIG_NAME.toUpperCase().replace(/\s/g, '')
@@ -64,7 +66,7 @@ function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
     let envConfig: Record<string, string> = {}
 
     confFiles.forEach((item) => {
-      const path = resolve(process.cwd(), item)
+      const path = resolve(process.cwd(), ENV_DIR, item)
       if (!existsSync(path))
         return
 

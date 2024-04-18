@@ -4,9 +4,9 @@ Configure environment variables on runtime.
 
 ## Features
 
-- 🚀 Replace environment variables by global variable.
+- 🚀 Replace Env variables by global variable.
 - ✨ No need to change your source code.
-- 🌱 Read `base`, `outDir`, `envPrefix` value by `vite.config`.
+- 🌱 Read `base`, `outDir`,`envDir` and more value by `vite.config`.
 - 📦 Generate configuration files at build time.
 - 🦾 Written in TypeScript.
 
@@ -38,7 +38,7 @@ export default {
 }
 ```
 
-And then you can use `dist/config.js` to configure your environment variables.
+And then you can use `dist/config.js` to configure your Env variables.
 
 ## Options
 
@@ -47,14 +47,14 @@ And then you can use `dist/config.js` to configure your environment variables.
 - **Type:** `string`
 - **Default:** `__PRODUCTION__APP__CONF__`
 
-  This is the name of the global variable that will be used to configure your environment variables. In the browser, the global variable name is `window.__PRODUCTION__APP__CONF__`.
+  This is the name of the global variable that will be used to configure your Env variables. In the browser, the default global variable name is `window.__PRODUCTION__APP__CONF__`.
 
 ### `prefix`
 
 - **Type:** `string`
 - **Default:** `VITE_`
 
-  Matches the environment variables that need to be configured.
+  Matches the Env variables that need to be configured.
 
 ### `filename`
 

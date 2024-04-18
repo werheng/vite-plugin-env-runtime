@@ -36,6 +36,8 @@
     "dev": "tsup --watch src",
     "build": "tsup",
     "play": "cd playground && vite",
+    "play:build": "cd playground && vite build",
+    "play:preview": "cd playground && vite preview",
     "test": "vitest",
     "test:run": "vitest run",
     "commit": "git-cz",
