@@ -43,7 +43,7 @@ function createContext(viteConfig: ResolvedConfig, rawOptions: Options = {}) {
 
     function generatePattern(patterns: string[]) {
       return patterns.map((prefix: string) => {
-        const regex = prefix.includes('*') ? prefix.replace('*', '[^;]+') : prefix
+        const regex = prefix.includes('*') ? prefix.replace('*', '[^\\W]+') : prefix
         return `(${regex})`
       }).join('|')
     }
@@ -55,7 +55,7 @@ function createContext(viteConfig: ResolvedConfig, rawOptions: Options = {}) {
     const excludeReg = new RegExp(generateReg(excludePattern), 'g')
 
     s.replace(includeReg, (match) => {
-      if (excludeReg.test(match))
+      if (!!excludes.length && excludeReg.test(match))
         return match
 
       return match.replaceAll('import.meta.env.', `window.${getConfigName()}.`)
