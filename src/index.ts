@@ -1,35 +1,44 @@
 import process from 'node:process'
 import { resolve } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import type { HtmlTagDescriptor, PluginOption, UserConfig } from 'vite'
 import MagicString from 'magic-string'
 import dotenv from 'dotenv'
 import consola from 'consola'
 import defu from 'defu'
-import { minimatch } from 'minimatch'
+import type { HtmlTagDescriptor, PluginOption, ResolvedConfig } from 'vite'
 import type { Options } from './types'
+import { arraify, createFilter } from './utils'
 
-function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
-  const options = defu(rawOptions, {
-    name: '__PRODUCTION__APP__CONF__',
-    prefix: 'VITE_',
-    filename: 'config.js',
-    exclude: [],
-  })
-
-  const { base, build, envPrefix, envDir } = defu(viteConfig, {
+function createContext(viteConfig: ResolvedConfig, rawOptions: Options = {}) {
+  const { base, build: { outDir }, envPrefix, envDir } = defu(viteConfig, {
     base: '/',
     build: { outDir: 'dist' },
     envPrefix: 'VITE_',
     envDir: '',
   })
 
+  const options = defu(rawOptions, {
+    name: '__PRODUCTION__APP__CONF__',
+    filename: 'config.js',
+    include: arraify(envPrefix).map(v => `${v}*`), // Default: ['VITE_*']
+    exclude: [],
+  })
+
+  const includes = arraify<string>(options.include)
+  const excludes = arraify<string>(options.exclude)
+
+  const envfilter = createFilter(includes, excludes)
+
+  const codeMatcher = (key: string) => `*import.meta.env.${key}`
+  const codeFilter = createFilter(
+    includes.map(codeMatcher),
+    [],
+  )
+
   const ENV_DISABLE_KEY = 'VITE_ENV_RUNTIME'
   const CONFIG_NAME = options.name
   const FILENAME = options.filename
-  const EXCLUDE = Array.isArray(options.exclude) ? options.exclude : [options.exclude]
-  const PREFIX = options.prefix ?? (Array.isArray(envPrefix) ? envPrefix[0] : envPrefix)
-  const OUTPUT_DIR = build.outDir
+  const OUTPUT_DIR = outDir
   const BASE = base
   const ENV_DIR = envDir
 
@@ -38,12 +47,19 @@ function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
   }
 
   function transform(code: string) {
-    const target = `import.meta.env.${PREFIX}`
-    if (!code.includes(target))
+    if (!codeFilter(code))
       return null
 
     const s = new MagicString(code)
-    s.replaceAll(target, `window.${getConfigName()}.${PREFIX}`)
+
+    const includePattern = includes.join('|')
+    const excludePattern = excludes.join('|')
+    const regexPattern = `import\\.meta\\.env\\.((?!${excludePattern})(${includePattern})[^;]+)`
+    const regex = new RegExp(regexPattern, 'g')
+
+    s.replace(regex, (match) => {
+      return match.replace('import.meta.env.', `window.${getConfigName()}.`)
+    })
 
     return {
       code: s.toString(),
@@ -52,7 +68,10 @@ function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
   }
 
   function transformIndexHtml(): HtmlTagDescriptor[] {
-    return [{ tag: 'script', attrs: { src: `${BASE + FILENAME}?v=${new Date().getTime()}` } }]
+    return [{
+      tag: 'script',
+      attrs: { src: `${BASE + FILENAME}?v=${new Date().getTime()}` },
+    }]
   }
 
   function getConfFiles() {
@@ -66,7 +85,7 @@ function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
     return ['.env', '.env.production']
   }
 
-  function getEnvConfig(match = PREFIX, confFiles = getConfFiles()) {
+  function getEnvConfig(confFiles = getConfFiles()) {
     let envConfig: Record<string, string> = {}
 
     confFiles.forEach((item) => {
@@ -86,10 +105,8 @@ function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
     if (envConfig[ENV_DISABLE_KEY] === 'false')
       return {}
 
-    const reg = new RegExp(`^(${match})`)
-
     Object.keys(envConfig).forEach((key) => {
-      if (!reg.test(key) || EXCLUDE.some(exclude => minimatch(key, exclude)))
+      if (!envfilter(key))
         Reflect.deleteProperty(envConfig, key)
     })
 
@@ -103,20 +120,20 @@ function createContext(viteConfig: UserConfig, rawOptions: Options = {}) {
   ) {
     try {
       const windowConf = `window.${configName}`
-      const configStr = `${windowConf}=${JSON.stringify(envConfig)};
+      const configContent = `${windowConf}=${JSON.stringify(envConfig)};
          Object.freeze(${windowConf});
          Object.defineProperty(window, "${configName}", {
            configurable: false,
            writable: false,
          });
        `.replace(/\s/g, '')
-      mkdirSync(resolve(process.cwd(), OUTPUT_DIR), { recursive: true })
-      writeFileSync(
-        resolve(process.cwd(), `${OUTPUT_DIR}/${configFileName}`),
-        configStr,
-      )
 
-      consola.success('[vite-plugin-env-runtime] Configuration file is build successfully: ' + `${OUTPUT_DIR}/${configFileName}`)
+      const outputDir = resolve(process.cwd(), OUTPUT_DIR)
+      const outputFile = resolve(outputDir, configFileName)
+      mkdirSync(outputDir, { recursive: true })
+      writeFileSync(outputFile, configContent)
+
+      consola.success(`[vite-plugin-env-runtime] Configuration file is build successfully: ${`${OUTPUT_DIR}/${configFileName}`}`)
     }
     catch (error) {
       consola.error(`configuration file failed to package:\n${error}`)

@@ -40,37 +40,29 @@ export default {
 
 And then you can use `dist/config.js` to configure your env variables.
 
-## Options
+## Configuration
 
 > Use `VITE_ENV_RUNTIME = false` in env file can disable this plugin.
 
-### `name`
+The following show the default values of the configuration
 
-- **Type:** `string`
-- **Default:** `__PRODUCTION__APP__CONF__`
+```ts
+EnvRuntime({
+  // Name of the global variable that will be used to configure your env variables.
+  // In the browser, the default global variable name is `window.__PRODUCTION__APP__CONF__`.
+  name: '__PRODUCTION__APP__CONF__',
 
-  This is the name of the global variable that will be used to configure your env variables. In the browser, the default global variable name is `window.__PRODUCTION__APP__CONF__`.
+  // Name of the configuration file that will be generated.
+  filename: 'config.js',
 
-### `prefix`
+  // Match variable to be configured by `minimatch`.
+  // Default value is according to `vite.config` - `envPrefix`.
+  include: 'VITE_*',
 
-- **Type:** `string`
-- **Default:** `VITE_`
-
-  Matches the env variables that need to be configured.
-
-### `filename`
-
-- **Type:** `string`
-- **Default:** `config.js`
-
-  Name of the configuration file that will be generated.
-
-### `exclude`
-
-- **Type:** `string | string[]`
-- **Default:** `[]`
-
-  Exclude env variables by `minimatch`.
+  // Match variable to NOT be configured by `minimatch`.
+  exclude: [],
+})
+```
 
 ## License
 

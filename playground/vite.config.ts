@@ -5,9 +5,8 @@ export default defineConfig({
   server: { port: 3001 },
   plugins: [
     EnvRuntime({
-      exclude: [
-        'VITE_EXCLUDES_*',
-      ],
+      include: 'VITE_APP_*',
+      exclude: 'VITE_EXCLUDE_*',
     }),
   ],
 })
