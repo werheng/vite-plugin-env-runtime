@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [
     EnvRuntime({
       include: ['VITE_APP_*'],
-      // include: ['VITE_APP_TITLE'],
+      // include: ['VITE_APP_TITLE', 'VITE_BASE_URL'],
       exclude: ['VITE_APP_COLOR'],
       // exclude: ['VITE_EXCLUDE_*'],
       // exclude: ['VITE_EXCLUDE_VALUE'],
