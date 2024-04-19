@@ -35,9 +35,9 @@
   "scripts": {
     "dev": "tsup --watch src",
     "build": "tsup",
-    "play": "cd playground && vite",
-    "play:build": "cd playground && vite build",
-    "play:preview": "cd playground && vite preview",
+    "play": "cd playground && pnpm run dev",
+    "play:build": "cd playground && pnpm run build",
+    "play:preview": "cd playground && pnpm run preview",
     "test": "vitest",
     "test:run": "vitest run",
     "commit": "cz",
