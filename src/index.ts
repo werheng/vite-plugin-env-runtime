@@ -20,20 +20,12 @@ function createContext(viteConfig: ResolvedConfig, rawOptions: Options = {}) {
   const options = defu(rawOptions, {
     name: '__PRODUCTION__APP__CONF__',
     filename: 'config.js',
-    include: arraify(envPrefix).map(v => `${v}*`), // Default: ['VITE_*']
     exclude: [],
   })
 
-  const includes = arraify<string>(options.include)
+  const includes = arraify<string>(options.include ?? arraify(envPrefix).map(v => `${v}*`))
   const excludes = arraify<string>(options.exclude)
-
-  const envfilter = createFilter(includes, excludes)
-
-  const codeMatcher = (key: string) => `*import.meta.env.${key}`
-  const codeFilter = createFilter(
-    includes.map(codeMatcher),
-    [],
-  )
+  const filter = createFilter(includes, excludes)
 
   const ENV_DISABLE_KEY = 'VITE_ENV_RUNTIME'
   const CONFIG_NAME = options.name
@@ -47,17 +39,25 @@ function createContext(viteConfig: ResolvedConfig, rawOptions: Options = {}) {
   }
 
   function transform(code: string) {
-    if (!codeFilter(code))
-      return null
-
     const s = new MagicString(code)
 
-    const includePattern = includes.join('|')
-    const excludePattern = excludes.join('|')
-    const regexPattern = `import\\.meta\\.env\\.((?!${excludePattern})(${includePattern})[^;]+)`
-    const regex = new RegExp(regexPattern, 'g')
+    function generatePattern(patterns: string[]) {
+      return patterns.map((prefix: string) => {
+        const regex = prefix.includes('*') ? prefix.replace('*', '[^;]+') : prefix
+        return `(${regex})`
+      }).join('|')
+    }
+    const includePattern = generatePattern(includes)
+    const excludePattern = generatePattern(excludes)
 
-    s.replace(regex, (match) => {
+    const generateReg = (pattern: string) => `import\\.meta\\.env\\.${pattern}*?;`
+    const includeReg = new RegExp(generateReg(includePattern), 'g')
+    const excludeReg = new RegExp(generateReg(excludePattern), 'g')
+
+    s.replace(includeReg, (match) => {
+      if (excludeReg.test(match))
+        return match
+
       return match.replace('import.meta.env.', `window.${getConfigName()}.`)
     })
 
@@ -106,7 +106,7 @@ function createContext(viteConfig: ResolvedConfig, rawOptions: Options = {}) {
       return {}
 
     Object.keys(envConfig).forEach((key) => {
-      if (!envfilter(key))
+      if (!filter(key))
         Reflect.deleteProperty(envConfig, key)
     })
 
