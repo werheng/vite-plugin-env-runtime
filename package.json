@@ -30,7 +30,7 @@
     "dist"
   ],
   "engines": {
-    "node": ">=20.9"
+    "node": ">=18.x"
   },
   "scripts": {
     "dev": "tsup --watch src",
