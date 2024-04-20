@@ -3,6 +3,7 @@ node_modules
 dist
 cache
 coverage
+**/.tmp
 
 # local env files
 .env.local

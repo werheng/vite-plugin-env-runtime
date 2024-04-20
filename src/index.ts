@@ -9,7 +9,7 @@ import type { HtmlTagDescriptor, PluginOption, ResolvedConfig } from 'vite'
 import type { Options } from './types'
 import { arraify, createFilter } from './utils'
 
-function createContext(viteConfig: ResolvedConfig, rawOptions: Options = {}) {
+export function createContext(viteConfig?: ResolvedConfig, rawOptions?: Options) {
   const { base, build: { outDir }, envPrefix, envDir } = defu(viteConfig, {
     base: '/',
     build: { outDir: 'dist' },
@@ -34,11 +34,18 @@ function createContext(viteConfig: ResolvedConfig, rawOptions: Options = {}) {
   const BASE = base
   const ENV_DIR = envDir
 
-  function getConfigName() {
+  function getGlobName() {
     return CONFIG_NAME.toUpperCase().replace(/\s/g, '')
   }
 
-  function transform(code: string) {
+  function transform(
+    code: string,
+    {
+      includeList = includes,
+      excludeList = excludes,
+      globName = getGlobName(),
+    } = {},
+  ) {
     const s = new MagicString(code)
 
     function generatePattern(patterns: string[]) {
@@ -47,18 +54,18 @@ function createContext(viteConfig: ResolvedConfig, rawOptions: Options = {}) {
         return `(${regex})`
       }).join('|')
     }
-    const includePattern = generatePattern(includes)
-    const excludePattern = generatePattern(excludes)
+    const includePattern = generatePattern(includeList)
+    const excludePattern = generatePattern(excludeList)
 
     const generateReg = (pattern: string) => `import\\.meta\\.env\\.(${pattern})`
     const includeReg = new RegExp(generateReg(includePattern), 'g')
     const excludeReg = new RegExp(generateReg(excludePattern), 'g')
 
     s.replace(includeReg, (match) => {
-      if (!!excludes.length && excludeReg.test(match))
+      if (!!excludeList.length && excludeReg.test(match))
         return match
 
-      return match.replaceAll('import.meta.env.', `window.${getConfigName()}.`)
+      return match.replaceAll('import.meta.env.', `window.${globName}.`)
     })
 
     return {
@@ -115,25 +122,25 @@ function createContext(viteConfig: ResolvedConfig, rawOptions: Options = {}) {
 
   function runBuildConfig(
     envConfig = getEnvConfig(),
-    configName = getConfigName(),
-    configFileName = FILENAME,
+    globName = getGlobName(),
+    configFilename = FILENAME,
   ) {
     try {
-      const windowConf = `window.${configName}`
+      const windowConf = `window.${globName}`
       const configContent = `${windowConf}=${JSON.stringify(envConfig)};
          Object.freeze(${windowConf});
-         Object.defineProperty(window, "${configName}", {
+         Object.defineProperty(window, "${globName}", {
            configurable: false,
            writable: false,
          });
        `.replace(/\s/g, '')
 
       const outputDir = resolve(process.cwd(), OUTPUT_DIR)
-      const outputFile = resolve(outputDir, configFileName)
+      const outputFile = resolve(outputDir, configFilename)
       mkdirSync(outputDir, { recursive: true })
       writeFileSync(outputFile, configContent)
 
-      consola.success(`[vite-plugin-env-runtime] Configuration file is build successfully: ${`${OUTPUT_DIR}/${configFileName}`}`)
+      consola.success(`[vite-plugin-env-runtime] Configuration file is build successfully: ${`${OUTPUT_DIR}/${configFilename}`}`)
     }
     catch (error) {
       consola.error(`configuration file failed to package:\n${error}`)
@@ -148,23 +155,23 @@ function createContext(viteConfig: ResolvedConfig, rawOptions: Options = {}) {
 }
 
 export default function viteEnvRuntimePlugin(options?: Options): PluginOption {
-  let config: any
+  let ctx: ReturnType<typeof createContext>
 
   return {
     name: 'vite-plugin-env-runtime',
     apply: 'build',
     configResolved(resolvedConfig) {
-      config = resolvedConfig
+      ctx = createContext(resolvedConfig, options)
     },
     transform(code) {
-      return createContext(config, options).transform(code)
+      return ctx.transform(code)
     },
     transformIndexHtml() {
-      return createContext(config, options).transformIndexHtml()
+      return ctx.transformIndexHtml()
     },
     closeBundle() {
       try {
-        createContext(config, options).runBuildConfig()
+        ctx.runBuildConfig()
       }
       catch (error) {
         consola.error(error)
