@@ -7,33 +7,36 @@ describe('transform', () => {
 
   it('includes', () => {
     const code = `
-      import.meta.env.VITE_APP_TITLE
-      import.meta.env.VITE_APP_COLOR
+      let a = import.meta.env.VITE_APP_TITLE
+      a = import.meta.env.VITE_APP_COLOR
+      a = import.meta.env.VITE_APP_COLOR_OTHER
     `
     const fuzzy = ctx.transform(code, {
       includeList: ['VITE_*'],
       globName,
     })
     const precise = ctx.transform(code, {
-      includeList: ['VITE_APP_TITLE'],
+      includeList: ['VITE_APP_COLOR'],
       globName,
     })
 
     expect(fuzzy.code).toBe(`
-      window.${globName}.VITE_APP_TITLE
-      window.${globName}.VITE_APP_COLOR
+      let a = window.${globName}.VITE_APP_TITLE
+      a = window.${globName}.VITE_APP_COLOR
+      a = window.${globName}.VITE_APP_COLOR_OTHER
     `)
     expect(precise.code).toBe(`
-      window.${globName}.VITE_APP_TITLE
-      import.meta.env.VITE_APP_COLOR
+      let a = import.meta.env.VITE_APP_TITLE
+      a = window.${globName}.VITE_APP_COLOR
+      a = import.meta.env.VITE_APP_COLOR_OTHER
     `)
   })
 
   it('excludes', () => {
     const code = `
-      import.meta.env.VITE_APP_TITLE
-      import.meta.env.VITE_EXCLUDE_DATA
-      import.meta.env.VITE_EXCLUDE_VALUE
+      let a = import.meta.env.VITE_APP_TITLE
+      a = import.meta.env.VITE_EXCLUDE_VALUE
+      a = import.meta.env.VITE_EXCLUDE_VALUE_DATA
     `
 
     const fuzzy = ctx.transform(code, {
@@ -48,14 +51,14 @@ describe('transform', () => {
     })
 
     expect(fuzzy.code).toBe(`
-      window.${globName}.VITE_APP_TITLE
-      import.meta.env.VITE_EXCLUDE_DATA
-      import.meta.env.VITE_EXCLUDE_VALUE
+      let a = window.${globName}.VITE_APP_TITLE
+      a = import.meta.env.VITE_EXCLUDE_VALUE
+      a = import.meta.env.VITE_EXCLUDE_VALUE_DATA
     `)
     expect(precise.code).toBe(`
-      window.${globName}.VITE_APP_TITLE
-      window.${globName}.VITE_EXCLUDE_DATA
-      import.meta.env.VITE_EXCLUDE_VALUE
+      let a = window.${globName}.VITE_APP_TITLE
+      a = import.meta.env.VITE_EXCLUDE_VALUE
+      a = window.${globName}.VITE_EXCLUDE_VALUE_DATA
     `)
   })
 })

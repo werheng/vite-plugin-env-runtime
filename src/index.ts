@@ -57,15 +57,17 @@ export function createContext(viteConfig?: ResolvedConfig, rawOptions?: Options)
     const includePattern = generatePattern(includeList)
     const excludePattern = generatePattern(excludeList)
 
-    const generateReg = (pattern: string) => `import\\.meta\\.env\\.(${pattern})`
+    const generateReg = (pattern: string) => `import\\.meta\\.env\\.(${pattern})\\b`
     const includeReg = new RegExp(generateReg(includePattern), 'g')
-    const excludeReg = new RegExp(generateReg(excludePattern), 'g')
 
     s.replace(includeReg, (match) => {
-      if (!!excludeList.length && excludeReg.test(match))
-        return match
+      const excludeReg = new RegExp(generateReg(excludePattern), 'g')
 
-      return match.replaceAll('import.meta.env.', `window.${globName}.`)
+      if ((!!excludeList.length) && excludeReg.test(match)) {
+        return match
+      }
+
+      return match.replace('import.meta.env.', `window.${globName}.`)
     })
 
     return {
