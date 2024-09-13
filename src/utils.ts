@@ -1,5 +1,5 @@
-import { minimatch } from 'minimatch'
 import type { Arrayable, Options } from './types'
+import { minimatch } from 'minimatch'
 
 export function arraify<T>(target: Arrayable<T>) {
   return Array.isArray(target) ? target : [target]
