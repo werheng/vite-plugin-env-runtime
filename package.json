@@ -48,7 +48,7 @@
     "deps:up": "pnpx taze -wr"
   },
   "peerDependencies": {
-    "vite": "^5.0.0"
+    "vite": ">=5.0.0"
   },
   "dependencies": {
     "consola": "^3.2.3",
